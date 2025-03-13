@@ -16,6 +16,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-      # You can test your matrix by printing the current Go version
-      - name: Display Go version
+      - name: Version
         run: go version
+      - name: Install
+        run: go mod download
+      - name: Build
+        run: go build -v ./...
+      - name: Test
+        run: go test ./...
+      - name: Bench
+        run: go test -benchmem -bench BenchmarkConfig github.com/boolka/goconfig/pkg/config/config_test
