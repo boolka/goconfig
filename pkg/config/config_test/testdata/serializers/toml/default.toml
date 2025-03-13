@@ -1,0 +1,3 @@
+[syslog-ng]
+domain = 'syslog-ng'
+port = 601

@@ -1,0 +1,14 @@
+{
+    "default-1": "default-1.json",
+    "env": "TEST_FILE_ENV",
+    "host-name-1": "host-name-1.toml",
+    "host-name-testing-1": "host-name-testing-1.toml",
+    "host-name-testing": "host-name-testing.toml",
+    "host-name": "host-name.toml",
+    "local-1": "local-1.toml",
+    "local-testing-1": "local-testing-1.toml",
+    "local-testing": "local-testing.toml",
+    "local": "local.toml",
+    "testing-1": "testing-1.yaml",
+    "testing": "testing.yaml"
+}

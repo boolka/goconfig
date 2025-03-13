@@ -1,0 +1,16 @@
+num = 1
+f_num = 1.0
+e_num = 1e2
+bool = true
+n_arr = [1, 2, 3]
+s_arr = ["1", "2", "3"]
+str = "\"custom string\"\n"
+
+[obj]
+num = 1
+f_num = 1.0
+e_num = 1e2
+bool = true
+n_arr = [1, 2, 3]
+s_arr = ["1", "2", "3"]
+str = "\"custom string\"\n"
