@@ -149,7 +149,7 @@ Where:
 First of all install it:
 
 ```bash
-go install github.com/boolka/goconfig@latest
+go install github.com/boolka/goconfig/cmd/goconfig@latest
 ```
 
 Then for example create directory `./config` and place `default.toml` file in to it with contents:
