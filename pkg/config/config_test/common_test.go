@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/boolka/goconfig/pkg/config"
@@ -181,5 +182,42 @@ func TestNilValue(t *testing.T) {
 
 	if v, ok := cfg.Get("empty.empty"); ok || v != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestContext(t *testing.T) {
+	t.Chdir("testdata")
+
+	cfg, err := config.New(config.Options{})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.Background()
+
+	v, ok := cfg.GetContext(ctx, "default")
+
+	if !ok || v != "default.json" {
+		t.Fatal(v, ok)
+	}
+}
+
+func TestContextErr(t *testing.T) {
+	t.Chdir("testdata")
+
+	cfg, err := config.New(config.Options{})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	v, ok := cfg.GetContext(ctx, "default")
+
+	if ok || v != config.ErrContextDone {
+		t.Fatal(v, ok)
 	}
 }

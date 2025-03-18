@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -123,6 +124,38 @@ func (c *Config) Get(path string) (any, bool) {
 		if ok {
 			break
 		}
+	}
+
+	return norm(v), ok
+}
+
+// GetContext method the same with Get method except that it receive context argument.
+func (c *Config) GetContext(ctx context.Context, path string) (any, bool) {
+	if c == nil {
+		return ErrUninitialized, false
+	}
+
+	var v any
+	var ok = false
+
+	done := make(chan struct{})
+
+	go func() {
+		for _, source := range c.sources {
+			v, ok = source.Get(path)
+
+			if ok {
+				break
+			}
+		}
+
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-ctx.Done():
+		v, ok = ErrContextDone, false
 	}
 
 	return norm(v), ok
