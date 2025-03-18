@@ -121,11 +121,11 @@ func (c *Config) Get(path string) (any, bool) {
 		v, ok = source.Get(path)
 
 		if ok {
-			return v, ok
+			break
 		}
 	}
 
-	return v, ok
+	return norm(v), ok
 }
 
 func loadDir(configDir string, hostname, deployment, instance string) ([]configEntry, error) {

@@ -174,7 +174,11 @@ Following libraries used to load concrete configuration files:
 - toml: `github.com/pelletier/go-toml/v2`
 - yaml: `gopkg.in/yaml.v3`
 
-Specific golang type will be tight to loading library. For example if you specify integer value `8080` in configuration file that value will be interpreted like `float64` by the json loader, `int64` by the toml loader and `int` by the yaml loader. Take your journey to their specifications.
+*goconfig* takes care over variety of number types specific serialization library provides by normalizing them. Type depends on number magnitude range:
+
+- x < MinInt or x > MaxUint: `float64`
+- x > MaxInt and x <= MaxUint: `uint`
+- x >= MinInt and x <= MaxInt: `int`
 
 ## Links
 
