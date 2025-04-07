@@ -6,19 +6,20 @@ type cfgSource int
 
 const (
 	_ cfgSource = iota
-	def
-	defInst
-	dep
-	depInst
-	host
-	hostInst
-	hostDep
-	hostDepInst
-	loc
-	locInst
-	locDep
-	locDepInst
-	env
+	defSrc
+	defInstSrc
+	depSrc
+	depInstSrc
+	hostSrc
+	hostInstSrc
+	hostDepSrc
+	hostDepInstSrc
+	locSrc
+	locInstSrc
+	locDepSrc
+	locDepInstSrc
+	envSrc
+	vaultSrc
 )
 
 var reDefInst = regexp.MustCompile(`^default-\d+$`)

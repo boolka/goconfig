@@ -1,0 +1,5 @@
+password1 = "secret,goconfig_secret"
+broken_field = "broken_value"
+
+[userpass]
+password2 = "secret,goconfig_secret,password2"

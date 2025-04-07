@@ -1,6 +1,7 @@
 package entry_test
 
 import (
+	"context"
 	"os"
 	"slices"
 	"testing"
@@ -16,34 +17,35 @@ func TestYamlEntry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		f.Close()
+	})
 
-	defer f.Close()
-
-	l, err := entry.NewYaml(f)
+	l, err := entry.NewYaml(context.Background(), f)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if v, ok := l.Get("num"); !ok || v != 1 {
+	if v, ok := l.Get(context.Background(), "num"); !ok || v != 1 {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("e_num"); !ok || v != float64(1e2) {
+	if v, ok := l.Get(context.Background(), "e_num"); !ok || v != float64(1e2) {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("bool"); !ok || v != true {
+	if v, ok := l.Get(context.Background(), "bool"); !ok || v != true {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("nil"); !ok || v != nil {
+	if v, ok := l.Get(context.Background(), "nil"); !ok || v != nil {
 		t.Fatal(v, ok)
 	}
 
 	var n []int
 
-	if v, ok := l.Get("n_arr"); !ok {
+	if v, ok := l.Get(context.Background(), "n_arr"); !ok {
 		t.Fatal(v, ok)
 	} else {
 		for _, i := range v.([]any) {
@@ -59,7 +61,7 @@ func TestYamlEntry(t *testing.T) {
 
 	var s []string
 
-	if v, ok := l.Get("s_arr"); !ok {
+	if v, ok := l.Get(context.Background(), "s_arr"); !ok {
 		t.Fatal(v, ok)
 	} else {
 		for _, i := range v.([]any) {
@@ -73,30 +75,30 @@ func TestYamlEntry(t *testing.T) {
 		t.Fatal(s, []string{"1", "2", "3"})
 	}
 
-	if v, ok := l.Get("str"); !ok || v != "\"custom string\"\n" {
+	if v, ok := l.Get(context.Background(), "str"); !ok || v != "\"custom string\"\n" {
 		t.Fatal(v, ok)
 	}
 
 	// nested
-	if v, ok := l.Get("obj.num"); !ok || v != 1 {
+	if v, ok := l.Get(context.Background(), "obj.num"); !ok || v != 1 {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("obj.e_num"); !ok || v != float64(1e2) {
+	if v, ok := l.Get(context.Background(), "obj.e_num"); !ok || v != float64(1e2) {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("obj.bool"); !ok || v != true {
+	if v, ok := l.Get(context.Background(), "obj.bool"); !ok || v != true {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("obj.nil"); !ok || v != nil {
+	if v, ok := l.Get(context.Background(), "obj.nil"); !ok || v != nil {
 		t.Fatal(v, ok)
 	}
 
 	var n1 []int
 
-	if v, ok := l.Get("obj.n_arr"); !ok {
+	if v, ok := l.Get(context.Background(), "obj.n_arr"); !ok {
 		t.Fatal(v, ok)
 	} else {
 		for _, i := range v.([]any) {
@@ -112,7 +114,7 @@ func TestYamlEntry(t *testing.T) {
 
 	var s1 []string
 
-	if v, ok := l.Get("obj.s_arr"); !ok {
+	if v, ok := l.Get(context.Background(), "obj.s_arr"); !ok {
 		t.Fatal(v, ok)
 	} else {
 		for _, i := range v.([]any) {
@@ -126,7 +128,27 @@ func TestYamlEntry(t *testing.T) {
 		t.Fatal(s1, []string{"1", "2", "3"})
 	}
 
-	if v, ok := l.Get("obj.str"); !ok || v != "\"custom string\"\n" {
+	if v, ok := l.Get(context.Background(), "obj.str"); !ok || v != "\"custom string\"\n" {
 		t.Fatal(v, ok)
+	}
+}
+
+func TestYamlContextCancel(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	f, err := os.Open("./testdata/config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		f.Close()
+	})
+
+	_, err = entry.NewYaml(ctx, f)
+	if err == nil {
+		t.Fatal(err)
 	}
 }

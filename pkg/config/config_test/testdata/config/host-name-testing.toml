@@ -1,5 +1,6 @@
 "host-name-testing" = "host-name-testing.toml"
 "env" = "TEST_FILE_ENV"
+"vault" = "host-name-testing.toml"
 "host-name-testing-1" = "host-name-testing-1.toml"
 "local-1" = "local-1.toml"
 "local-testing-1" = "local-testing-1.toml"
