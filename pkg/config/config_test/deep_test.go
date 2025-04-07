@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/boolka/goconfig/pkg/config"
@@ -9,7 +10,9 @@ import (
 func TestDeepConfig(t *testing.T) {
 	t.Setenv("TEST_FILE_ENV", "config_file_env_custom")
 
-	cfg, err := config.New(config.Options{
+	ctx := context.Background()
+
+	cfg, err := config.New(ctx, config.Options{
 		Directory: "testdata/deep",
 	})
 
@@ -17,7 +20,11 @@ func TestDeepConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if v, ok := cfg.Get("deep.deep.custom"); !ok || v != "config_file_env_custom" {
+	if _, ok := cfg.Get(ctx, "deep.deep"); !ok {
+		t.Fatal("deep.deep", ok)
+	}
+
+	if v, ok := cfg.Get(ctx, "deep.deep.custom"); !ok || v != "config_file_env_custom" {
 		t.Fatal(v, ok)
 	}
 }

@@ -1,5 +1,6 @@
 testing: "testing.yaml"
 env: "TEST_FILE_ENV"
+vault: "testing.yaml"
 host-name-1: "host-name-1.toml"
 host-name-testing-1: "host-name-testing-1.toml"
 host-name-testing: "host-name-testing.toml"
