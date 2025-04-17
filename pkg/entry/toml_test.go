@@ -1,6 +1,7 @@
 package entry_test
 
 import (
+	"context"
 	"os"
 	"slices"
 	"testing"
@@ -11,39 +12,44 @@ import (
 func TestTomlEntry(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+
 	f, err := os.Open("./testdata/config.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		f.Close()
+	})
 
+	l, err := entry.NewToml(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer f.Close()
-
-	l, err := entry.NewToml(f)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if v, ok := l.Get("num"); !ok || v != int64(1) {
+	if v, ok := l.Get(ctx, "empty_field"); ok {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("f_num"); !ok || v != 1. {
+	if v, ok := l.Get(ctx, "num"); !ok || v != int64(1) {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("e_num"); !ok || v != float64(1e2) {
+	if v, ok := l.Get(ctx, "f_num"); !ok || v != 1. {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("bool"); !ok || v != true {
+	if v, ok := l.Get(ctx, "e_num"); !ok || v != float64(1e2) {
+		t.Fatal(v, ok)
+	}
+
+	if v, ok := l.Get(ctx, "bool"); !ok || v != true {
 		t.Fatal(v, ok)
 	}
 
 	var n []int64
 
-	if v, ok := l.Get("n_arr"); !ok {
+	if v, ok := l.Get(ctx, "n_arr"); !ok {
 		t.Fatal(v, ok)
 	} else {
 		for _, i := range v.([]any) {
@@ -59,7 +65,7 @@ func TestTomlEntry(t *testing.T) {
 
 	var s []string
 
-	if v, ok := l.Get("s_arr"); !ok {
+	if v, ok := l.Get(ctx, "s_arr"); !ok {
 		t.Fatal(v, ok)
 	} else {
 		for _, i := range v.([]any) {
@@ -73,30 +79,30 @@ func TestTomlEntry(t *testing.T) {
 		t.Fatal(s, []string{"1", "2", "3"})
 	}
 
-	if v, ok := l.Get("str"); !ok || v != "\"custom string\"\n" {
+	if v, ok := l.Get(ctx, "str"); !ok || v != "\"custom string\"\n" {
 		t.Fatal(v, ok)
 	}
 
 	// nested
-	if v, ok := l.Get("obj.num"); !ok || v != int64(1) {
+	if v, ok := l.Get(ctx, "obj.num"); !ok || v != int64(1) {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("f_num"); !ok || v != 1. {
+	if v, ok := l.Get(ctx, "f_num"); !ok || v != 1. {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("obj.e_num"); !ok || v != float64(1e2) {
+	if v, ok := l.Get(ctx, "obj.e_num"); !ok || v != float64(1e2) {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := l.Get("obj.bool"); !ok || v != true {
+	if v, ok := l.Get(ctx, "obj.bool"); !ok || v != true {
 		t.Fatal(v, ok)
 	}
 
 	var n1 []int64
 
-	if v, ok := l.Get("obj.n_arr"); !ok {
+	if v, ok := l.Get(ctx, "obj.n_arr"); !ok {
 		t.Fatal(v, ok)
 	} else {
 		for _, i := range v.([]any) {
@@ -112,7 +118,7 @@ func TestTomlEntry(t *testing.T) {
 
 	var s1 []string
 
-	if v, ok := l.Get("obj.s_arr"); !ok {
+	if v, ok := l.Get(ctx, "obj.s_arr"); !ok {
 		t.Fatal(v, ok)
 	} else {
 		for _, i := range v.([]any) {
@@ -126,7 +132,27 @@ func TestTomlEntry(t *testing.T) {
 		t.Fatal(s1, []string{"1", "2", "3"})
 	}
 
-	if v, ok := l.Get("obj.str"); !ok || v != "\"custom string\"\n" {
+	if v, ok := l.Get(ctx, "obj.str"); !ok || v != "\"custom string\"\n" {
 		t.Fatal(v, ok)
+	}
+}
+
+func TestTomlContextCancel(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	f, err := os.Open("./testdata/config.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		f.Close()
+	})
+
+	_, err = entry.NewToml(ctx, f)
+	if err == nil {
+		t.Fatal(err)
 	}
 }

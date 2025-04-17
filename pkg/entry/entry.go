@@ -1,5 +1,7 @@
 package entry
 
+import "context"
+
 type Entry interface {
-	Get(string) (any, bool)
+	Get(context.Context, string) (any, bool)
 }

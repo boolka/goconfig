@@ -9,7 +9,7 @@ func TestMapGetter(t *testing.T) {
 		"field1": 1,
 	}
 
-	if v, ok := get(m, "field1"); !ok || v != 1 {
+	if v, ok := getFromMap(m, "field1"); !ok || v != 1 {
 		t.Fatal(v, ok)
 	}
 }
@@ -25,7 +25,7 @@ func TestNestedMapGetter(t *testing.T) {
 		},
 	}
 
-	if v, ok := get(m, "field1.field2.field3"); !ok || v != 1 {
+	if v, ok := getFromMap(m, "field1.field2.field3"); !ok || v != 1 {
 		t.Fatal(v, ok)
 	}
 }
@@ -35,7 +35,7 @@ func TestEmptyMap(t *testing.T) {
 
 	m := map[string]any{}
 
-	if v, ok := get(m, "field1.field2.field3"); ok || v != nil {
+	if v, ok := getFromMap(m, "field1.field2.field3"); ok || v != nil {
 		t.Fatal(v, ok)
 	}
 }
@@ -51,7 +51,7 @@ func TestNilMapGetter(t *testing.T) {
 		},
 	}
 
-	if v, ok := get(m, "field1.field2.field3"); !ok || v != nil {
+	if v, ok := getFromMap(m, "field1.field2.field3"); !ok || v != nil {
 		t.Fatal(v, ok)
 	}
 }
