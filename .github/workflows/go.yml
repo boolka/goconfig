@@ -4,11 +4,10 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.24.x' ]
+        go-version: ["1.23.x", "1.24.x"]
 
     steps:
       - uses: actions/checkout@v4
@@ -20,9 +19,11 @@ jobs:
         run: go version
       - name: Install
         run: go mod download
+      - name: Vet
+        run: go vet ./...
       - name: Build
-        run: go build -v ./...
+        run: go build -v -trimpath ./...
       - name: Test
-        run: go test ./...
+        run: go test -race -count 1 ./...
       - name: Bench
         run: go test -benchmem -bench BenchmarkConfig github.com/boolka/goconfig/pkg/config/config_test

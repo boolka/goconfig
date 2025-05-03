@@ -1,0 +1,4 @@
+password1 = "secret,goconfig_secret_1"
+
+[userpass]
+password2 = "secret,goconfig_secret_1,password2"

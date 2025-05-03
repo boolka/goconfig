@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -10,7 +11,9 @@ import (
 func TestMultiConfigDir(t *testing.T) {
 	t.Parallel()
 
-	cfg, err := config.New(config.Options{
+	ctx := context.Background()
+
+	cfg, err := config.New(ctx, config.Options{
 		Directory: "testdata/deep" + string(os.PathListSeparator) + "testdata/config",
 	})
 
@@ -18,11 +21,11 @@ func TestMultiConfigDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if v, ok := cfg.Get("deep.deep.custom"); !ok || v != "default.json" {
+	if v, ok := cfg.Get(ctx, "deep.deep.custom"); !ok || v != "default.json" {
 		t.Fatal(v, ok)
 	}
 
-	if v, ok := cfg.Get("default"); !ok || v != "default.json" {
+	if v, ok := cfg.Get(ctx, "default"); !ok || v != "default.json" {
 		t.Fatal(v, ok)
 	}
 }

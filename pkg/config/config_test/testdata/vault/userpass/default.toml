@@ -1,0 +1,5 @@
+[goconfig.vault]
+address = "http://127.0.0.1:8200"
+
+[goconfig.vault.auth]
+username = "goconfig_vault_login"

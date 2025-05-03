@@ -1,8 +1,9 @@
 package config_test
 
 import (
+	"context"
 	"errors"
-	"os"
+	"io/fs"
 	"testing"
 
 	"github.com/boolka/goconfig/pkg/config"
@@ -11,12 +12,11 @@ import (
 func TestUnexpectedConfigDirectory(t *testing.T) {
 	t.Parallel()
 
-	_, err := config.New(config.Options{
+	_, err := config.New(context.Background(), config.Options{
 		Directory: "unexpected/directory/path",
 	})
 
-	var pathError *os.PathError
-
+	var pathError *fs.PathError
 	if !errors.As(err, &pathError) {
 		t.Fatal(err)
 	}
@@ -25,11 +25,10 @@ func TestUnexpectedConfigDirectory(t *testing.T) {
 func TestSkipUnsupportedFile(t *testing.T) {
 	t.Parallel()
 
-	_, err := config.New(config.Options{
+	_, err := config.New(context.Background(), config.Options{
 		Directory: "./testdata/unsupported",
 	})
-
-	if err != nil {
+	if err != config.ErrEmptyDir {
 		t.Fatal(err)
 	}
 }
@@ -37,7 +36,7 @@ func TestSkipUnsupportedFile(t *testing.T) {
 func TestBrokenJson(t *testing.T) {
 	t.Parallel()
 
-	_, err := config.New(config.Options{
+	_, err := config.New(context.Background(), config.Options{
 		Directory: "./testdata/unexpected/json",
 	})
 
@@ -49,7 +48,7 @@ func TestBrokenJson(t *testing.T) {
 func TestBrokenToml(t *testing.T) {
 	t.Parallel()
 
-	_, err := config.New(config.Options{
+	_, err := config.New(context.Background(), config.Options{
 		Directory: "./testdata/unexpected/toml",
 	})
 
@@ -61,7 +60,7 @@ func TestBrokenToml(t *testing.T) {
 func TestBrokenYaml(t *testing.T) {
 	t.Parallel()
 
-	_, err := config.New(config.Options{
+	_, err := config.New(context.Background(), config.Options{
 		Directory: "./testdata/unexpected/yaml",
 	})
 

@@ -1,6 +1,7 @@
 package entry
 
 import (
+	"context"
 	"os"
 )
 
@@ -14,24 +15,16 @@ func NewEnv(entry Entry) (*EnvEntry, error) {
 	}, nil
 }
 
-func (e *EnvEntry) Get(path string) (any, bool) {
-	v, ok := e.entry.Get(path)
-
+func (e *EnvEntry) Get(ctx context.Context, path string) (any, bool) {
+	v, ok := e.entry.Get(ctx, path)
 	if !ok {
 		return nil, false
 	}
 
 	vString, ok := v.(string)
-
 	if !ok {
 		return nil, false
 	}
 
-	v = os.Getenv(vString)
-
-	if v == "" {
-		return nil, false
-	}
-
-	return v, true
+	return os.LookupEnv(vString)
 }

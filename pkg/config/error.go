@@ -2,4 +2,4 @@ package config
 
 import "errors"
 
-var ErrUninitialized = errors.New("config is uninitialized")
+var ErrEmptyDir = errors.New("empty directory")

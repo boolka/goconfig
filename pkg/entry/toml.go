@@ -1,6 +1,8 @@
 package entry
 
 import (
+	"context"
+	"fmt"
 	"io"
 
 	"github.com/pelletier/go-toml/v2"
@@ -10,13 +12,26 @@ type TomlEntry struct {
 	data map[string]any
 }
 
-func NewToml(r io.Reader) (*TomlEntry, error) {
+func NewToml(ctx context.Context, r io.Reader) (*TomlEntry, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	data := make(map[string]any)
+	done := make(chan error)
 
-	err := toml.NewDecoder(r).Decode(&data)
+	go func() {
+		defer close(done)
 
-	if err != nil {
-		return nil, err
+		done <- toml.NewDecoder(r).Decode(&data)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case err := <-done:
+		if err != nil {
+			return nil, fmt.Errorf("NewToml err: %w", err)
+		}
 	}
 
 	return &TomlEntry{
@@ -24,6 +39,6 @@ func NewToml(r io.Reader) (*TomlEntry, error) {
 	}, nil
 }
 
-func (e *TomlEntry) Get(path string) (any, bool) {
-	return get(e.data, path)
+func (e *TomlEntry) Get(_ context.Context, path string) (any, bool) {
+	return getFromMap(e.data, path)
 }

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
-	"github.com/boolka/goconfig/pkg/config"
+	"github.com/boolka/goconfig"
+	vaultMock "github.com/boolka/goconfig/pkg/vault"
 )
 
 const helpMsg = `Load application structured configuration. For more info follow https://github.com/boolka/goconfig.
@@ -15,6 +18,8 @@ const helpMsg = `Load application structured configuration. For more info follow
 --instance (-i) sets current instance
 --hostname sets current hostname (by default will try to load os.Hostname() with the part after the first dot stripped off)
 --get (-g) configuration path to lookup
+--token set vault token
+--verbose (-v) add debug and errors output
 --help (-h) prints this message
 `
 
@@ -29,6 +34,9 @@ func main() {
 	var instanceArg = false
 	var hostnameArg = false
 	var getArg = false
+	var vaultTokenArg = false
+	var verbose = false
+	var vaultToken = ""
 
 	for _, arg := range os.Args {
 		switch {
@@ -49,6 +57,10 @@ func main() {
 			getPath = arg
 			getArg = false
 			continue
+		case vaultTokenArg:
+			vaultToken = arg
+			vaultTokenArg = false
+			continue
 		}
 
 		switch arg {
@@ -67,6 +79,10 @@ func main() {
 		case "--get", "-g":
 			getArg = true
 			continue
+		case "--verbose", "-v":
+			verbose = true
+		case "--token":
+			vaultTokenArg = true
 		case "--help", "-h":
 			fmt.Print(helpMsg)
 			return
@@ -88,26 +104,44 @@ func main() {
 				hostname = param
 			case strings.Contains(arg, "--get"):
 				getPath = param
+			case strings.Contains(arg, "--token"):
+				vaultToken = param
 			}
 		}
 	}
 
-	cfg, err := config.New(config.Options{
+	ctx := context.Background()
+
+	var logger *slog.Logger
+
+	if verbose {
+		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     slog.LevelDebug,
+			AddSource: true,
+		}))
+	}
+
+	opts := goconfig.Options{
 		Directory:  configDirectory,
 		Instance:   instance,
 		Hostname:   hostname,
 		Deployment: deployment,
-	})
+		Logger:     logger,
+	}
 
+	if vaultToken != "" {
+		opts.VaultAuth = vaultMock.NewTokenAuth(vaultToken)
+	}
+
+	cfg, err := goconfig.New(ctx, opts)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	v, ok := cfg.Get(getPath)
-
+	v, ok := cfg.Get(ctx, getPath)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "\""+getPath+"\" key was not found")
+		fmt.Fprintln(os.Stderr, "\""+getPath+"\" key not found")
 	} else {
 		fmt.Print(v)
 	}

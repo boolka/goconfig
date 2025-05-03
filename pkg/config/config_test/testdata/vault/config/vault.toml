@@ -1,0 +1,14 @@
+password1 = "secret,goconfig_secret_1"
+
+[userpass]
+password2 = "secret,goconfig_secret_1,password2"
+
+[goconfig.vault]
+address = "http://127.0.0.1:8200"
+min_retry_wait = "3"
+max_retry_wait = "5"
+max_retries = "10"
+timeout = "30s"
+
+[goconfig.vault.auth]
+token = "root"
