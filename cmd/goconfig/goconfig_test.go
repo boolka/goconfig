@@ -182,7 +182,7 @@ func TestGoconfigHostname(t *testing.T) {
 	}
 }
 
-func TestGoconfigVaultConfig(t *testing.T) {
+func TestGoconfigVaultTokenConfig(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -238,7 +238,7 @@ func TestGoconfigVaultConfig(t *testing.T) {
 	}
 }
 
-func TestGoconfigVaultDirectToken(t *testing.T) {
+func TestGoconfigVaultTokenAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -247,14 +247,14 @@ func TestGoconfigVaultDirectToken(t *testing.T) {
 	t.Cleanup(vaultServer.Close)
 	vaultClient := vaultMock.NewClient(vaultServer.URL, "root", vaultServer.Client())
 
-	err := vaultClient.WriteSecret(ctx, "secret", "goconfig_cmd_secret", map[string]any{
+	err := vaultClient.WriteSecret(ctx, "secret", "goconfig_cmd_token_secret", map[string]any{
 		"password": "abc123",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		err = vaultClient.DeleteSecret(ctx, "secret", "goconfig_cmd_secret")
+		err = vaultClient.DeleteSecret(ctx, "secret", "goconfig_cmd_token_secret")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -264,7 +264,7 @@ func TestGoconfigVaultDirectToken(t *testing.T) {
 
 	vaultCfgFile := fmt.Sprintf("[goconfig.vault]\naddress=\"%s\"", vaultServer.URL)
 	CreateConfigFile(d, "default.toml", vaultCfgFile)
-	CreateConfigFile(d, "vault.toml", `password="secret,goconfig_cmd_secret"`)
+	CreateConfigFile(d, "vault.toml", `password="secret,goconfig_cmd_token_secret"`)
 
 	testCases := [][]string{
 		{"go", "run", "./goconfig.go", "--config=" + d, "--get=password", "--token", "root"},
@@ -273,6 +273,188 @@ func TestGoconfigVaultDirectToken(t *testing.T) {
 
 	for i, testCase := range testCases {
 		t.Run(fmt.Sprintf("TestGoconfigVaultDirectToken(%d)", i), func(t *testing.T) {
+			cmd := exec.Command(testCase[0], testCase[1:]...)
+
+			var stdout, stderr strings.Builder
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+
+			err := cmd.Run()
+			if err != nil {
+				t.Fatal(err, stderr.String())
+			}
+
+			if stdout.String() != "abc123" {
+				t.Fatal(stdout.String(), stderr.String(), "abc123")
+			}
+			if stderr.String() != "" {
+				t.Fatal(stderr.String())
+			}
+		})
+	}
+}
+
+func TestGoconfigVaultUserPassAuth(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	vaultServer := vaultMock.NewServer("root")
+	t.Cleanup(vaultServer.Close)
+	vaultClient := vaultMock.NewClient(vaultServer.URL, "root", vaultServer.Client())
+
+	err := vaultClient.EnableUserPassMethod(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultClient.DisableUserPassMethod(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	policyName := "cmd_goconfig_userpass_policy_name"
+
+	err = vaultClient.CreateSecretPolicy(ctx, policyName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultClient.DeleteSecretPolicy(ctx, policyName)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	err = vaultClient.CreateUserPass(ctx, "goconfig_cmd_userpass_login", "goconfig_cmd_userpass_password", policyName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultClient.DeleteUserPass(ctx, "goconfig_cmd_userpass_login")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	err = vaultClient.WriteSecret(ctx, "secret", "goconfig_cmd_userpass_secret", map[string]any{
+		"password": "abc123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultClient.DeleteSecret(ctx, "secret", "goconfig_cmd_userpass_secret")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	d := TmpConfigDir(t)
+
+	vaultCfgFile := fmt.Sprintf("[goconfig.vault]\naddress=\"%s\"", vaultServer.URL)
+	CreateConfigFile(d, "default.toml", vaultCfgFile)
+	CreateConfigFile(d, "vault.toml", `password="secret,goconfig_cmd_userpass_secret"`)
+
+	testCases := [][]string{
+		{"go", "run", "./goconfig.go", "--config=" + d, "--get=password", "--username", "goconfig_cmd_userpass_login", "--password", "goconfig_cmd_userpass_password"},
+		{"go", "run", "./goconfig.go", "--config", d, "--get=password", "--username=goconfig_cmd_userpass_login", "--password=goconfig_cmd_userpass_password"},
+	}
+
+	for i, testCase := range testCases {
+		t.Run(fmt.Sprintf("TestGoconfigVaultUserPassAuth(%d)", i), func(t *testing.T) {
+			cmd := exec.Command(testCase[0], testCase[1:]...)
+
+			var stdout, stderr strings.Builder
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+
+			err := cmd.Run()
+			if err != nil {
+				t.Fatal(err, stderr.String())
+			}
+
+			if stdout.String() != "abc123" {
+				t.Fatal(stdout.String(), stderr.String(), "abc123")
+			}
+			if stderr.String() != "" {
+				t.Fatal(stderr.String())
+			}
+		})
+	}
+}
+
+func TestGoconfigVaultAppRoleAuth(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	vaultServer := vaultMock.NewServer("root")
+	t.Cleanup(vaultServer.Close)
+	vaultClient := vaultMock.NewClient(vaultServer.URL, "root", vaultServer.Client())
+
+	err := vaultClient.EnableAppRoleMethod(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultClient.DisableAppRoleMethod(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	policyName := "goconfig_cmd_approle_policy_name"
+
+	err = vaultClient.CreateSecretPolicy(ctx, policyName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultClient.DeleteSecretPolicy(ctx, policyName)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	roleId, secretId, err := vaultClient.CreateAppRole(ctx, "goconfig_cmd_approle", policyName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultClient.DeleteAppRole(ctx, "goconfig_cmd_approle")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	err = vaultClient.WriteSecret(ctx, "secret", "goconfig_cmd_approle_secret", map[string]any{
+		"password": "abc123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultClient.DeleteSecret(ctx, "secret", "goconfig_cmd_approle_secret")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	d := TmpConfigDir(t)
+
+	vaultCfgFile := fmt.Sprintf("[goconfig.vault]\naddress=\"%s\"", vaultServer.URL)
+	CreateConfigFile(d, "default.toml", vaultCfgFile)
+	CreateConfigFile(d, "vault.toml", `password="secret,goconfig_cmd_approle_secret"`)
+
+	testCases := [][]string{
+		{"go", "run", "./goconfig.go", "--config=" + d, "--get=password", "--roleid", roleId, "--secretid", secretId},
+		{"go", "run", "./goconfig.go", "--config", d, "--get=password", "--roleid=" + roleId, "--secretid=" + secretId},
+	}
+
+	for i, testCase := range testCases {
+		t.Run(fmt.Sprintf("TestGoconfigVaultAppRoleAuth(%d)", i), func(t *testing.T) {
 			cmd := exec.Command(testCase[0], testCase[1:]...)
 
 			var stdout, stderr strings.Builder

@@ -28,7 +28,7 @@ import (
 //
 //   - Hostname: mean current machine hostname
 //
-//   - Logger: produce debug info and errors to provided logger. Module will be silent if nil was received
+//   - Logger: produce output to supplied logger. Module will be silent if nil was received.
 //
 //   - VaultClient: vault client if you don't want to create a new one
 //
@@ -88,10 +88,6 @@ func New(ctx context.Context, options Options) (cfg *Config, err error) {
 		ctx = ContextWithLogger(ctx, logger)
 	}
 
-	if logger != nil && logger.Enabled(ctx, slog.LevelDebug) {
-		logger.DebugContext(ctx, "new config instantiating")
-	}
-
 	if hostname == "" {
 		h, err := os.Hostname()
 
@@ -121,10 +117,11 @@ func New(ctx context.Context, options Options) (cfg *Config, err error) {
 	}
 
 	if logger != nil && logger.Enabled(ctx, slog.LevelDebug) {
-		logger.DebugContext(ctx, fmt.Sprintf(`goconfig directory: "%s"`, directory))
-		logger.DebugContext(ctx, fmt.Sprintf(`goconfig hostname: "%s"`, hostname))
-		logger.DebugContext(ctx, fmt.Sprintf(`goconfig deployment: "%s"`, deployment))
-		logger.DebugContext(ctx, fmt.Sprintf(`goconfig instance: "%s"`, instance))
+		logger.DebugContext(ctx, fmt.Sprintf(`directory: "%s"`, directory))
+		logger.DebugContext(ctx, fmt.Sprintf(`fsys: "%t"`, fsys != nil))
+		logger.DebugContext(ctx, fmt.Sprintf(`hostname: "%s"`, hostname))
+		logger.DebugContext(ctx, fmt.Sprintf(`deployment: "%s"`, deployment))
+		logger.DebugContext(ctx, fmt.Sprintf(`instance: "%s"`, instance))
 	}
 
 	var sources = []configEntry{}
@@ -305,15 +302,12 @@ func (c *Config) MustGet(ctx context.Context, path string) any {
 		c.logger.DebugContext(ctx, fmt.Sprintf(`trying to get "%s" field`, path))
 	}
 
-	var v any
-	var ok = false
-
 	value := make(chan sourceValue)
 
 	go func() {
 		defer close(value)
 
-		v, ok = searchThroughSources(ctx, c.sources, path)
+		v, ok := searchThroughSources(ctx, c.sources, path)
 
 		value <- sourceValue{
 			v:  v,
@@ -325,14 +319,12 @@ func (c *Config) MustGet(ctx context.Context, path string) any {
 	case <-ctx.Done():
 		panic(ctx.Err())
 	case res := <-value:
-		v, ok = res.v, res.ok
-	}
+		if !res.ok {
+			panic("path " + path + " not found")
+		}
 
-	if !ok {
-		panic("path " + path + " not found")
+		return res.v
 	}
-
-	return v
 }
 
 // Return created or directly passed vault client
@@ -350,7 +342,7 @@ func (c *Config) GetVaultClient() *vault.Client {
 
 func searchThroughSources(ctx context.Context, sources []configEntry, path string) (any, bool) {
 	var v any
-	var ok = false
+	var ok bool
 
 	for _, source := range sources {
 		v, ok = source.Get(ctx, path)
@@ -358,10 +350,10 @@ func searchThroughSources(ctx context.Context, sources []configEntry, path strin
 		if ok {
 			break
 		} else {
-			if logger, ok := LoggerFromContext(ctx); ok && logger.Enabled(ctx, slog.LevelDebug) {
+			if logger, ok := LoggerFromContext(ctx); ok && logger.Enabled(ctx, slog.LevelInfo) {
 				switch v := v.(type) {
 				case error:
-					logger.Debug(v.Error())
+					logger.InfoContext(ctx, v.Error())
 				}
 			}
 		}

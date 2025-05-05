@@ -86,6 +86,7 @@ goconfig.Options{
 	Instance:          "1",
 	Deployment:        "production",
 	Hostname:          "localhost",                // os.Hostname() by default
+	Logger:            *slog.Logger,               // goconfig will remain silent when nil is received
 	VaultClient:       *vault.Client,              // vault client if you don't want to create a new one
 	VaultAuth:         vault.AuthMethod,           // is the AuthMethod interface from `github.com/hashicorp/vault/api` module that provides Login method
 }
@@ -114,6 +115,10 @@ Multi instance configuration common usage is for get specific options for horizo
 If you do not provide `Hostname` explicitly then `os.Hostname()` is called with the part after the first dot stripped off. For example suppose the `MacBook-Pro-5.local` is hostname. Then `Hostname` will borrow `MacBook-Pro-5`. It may be identical with `hostname -s` call.
 
 `Hostname` must not contain dots in general. This is important for searching a specific value in the configuration, as long as the dot is a field separator. Choose to provide it explicitly when in doubt.
+
+##### Logger
+
+Produce output to supplied logger. Module will be silent if nil was received. Can be helpful for state some source errors. For example if vault was unavailable then logger will receive message describes whats going on.
 
 ##### VaultClient
 

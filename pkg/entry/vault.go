@@ -57,7 +57,6 @@ func (e *VaultEntry) Get(ctx context.Context, path string) (any, bool) {
 	var data string
 
 	v, ok := e.entry.Get(ctx, path)
-
 	if !ok {
 		return nil, false
 	}

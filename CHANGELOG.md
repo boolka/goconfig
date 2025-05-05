@@ -1,3 +1,10 @@
+# v1.0.1
+
+- add vault auth username/password & roleid/secretid params for cli usage
+- flag support
+- fix README.md Logger option description
+- some minor fixes
+
 # v1.0.0
 
 - add vault support

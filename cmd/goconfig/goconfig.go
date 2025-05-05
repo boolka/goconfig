@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
-	"strings"
 
 	"github.com/boolka/goconfig"
 	vaultMock "github.com/boolka/goconfig/pkg/vault"
+	appRoleAuth "github.com/hashicorp/vault/api/auth/approle"
+	userPassAuth "github.com/hashicorp/vault/api/auth/userpass"
 )
 
 const helpMsg = `Load application structured configuration. For more info follow https://github.com/boolka/goconfig.
@@ -18,96 +20,51 @@ const helpMsg = `Load application structured configuration. For more info follow
 --instance (-i) sets current instance
 --hostname sets current hostname (by default will try to load os.Hostname() with the part after the first dot stripped off)
 --get (-g) configuration path to lookup
---token set vault token
+--token vault token. For token auth
+--username vault userpass auth username
+--password vault userpass auth password
+--roleid vault approle auth roleid
+--secretid vault approle auth secretid
 --verbose (-v) add debug and errors output
 --help (-h) prints this message
 `
 
 func main() {
-	var configDirectory = ""
-	var deployment = ""
-	var instance = ""
-	var hostname = ""
-	var getPath = ""
-	var configDirectoryArg = false
-	var deploymentArg = false
-	var instanceArg = false
-	var hostnameArg = false
-	var getArg = false
-	var vaultTokenArg = false
-	var verbose = false
-	var vaultToken = ""
+	var configDirectory, deployment, instance, hostname, getPath string
+	var vaultToken, vaultUsername, vaultPassword, vaultRoleId, vaultSecretId string
+	var verbose, help bool
 
-	for _, arg := range os.Args {
-		switch {
-		case configDirectoryArg:
-			configDirectory = arg
-			configDirectoryArg = false
-			continue
-		case deploymentArg:
-			deployment = arg
-			deploymentArg = false
-		case instanceArg:
-			instance = arg
-			instanceArg = false
-		case hostnameArg:
-			hostname = arg
-			hostnameArg = false
-		case getArg:
-			getPath = arg
-			getArg = false
-			continue
-		case vaultTokenArg:
-			vaultToken = arg
-			vaultTokenArg = false
-			continue
-		}
+	flag.StringVar(&configDirectory, "config", "", "provide optional configuration files directory")
+	flag.StringVar(&configDirectory, "c", "", "provide optional configuration files directory")
 
-		switch arg {
-		case "--config", "-c":
-			configDirectoryArg = true
-			continue
-		case "--deployment", "-d":
-			deploymentArg = true
-			continue
-		case "--instance", "-i":
-			instanceArg = true
-			continue
-		case "--hostname":
-			hostnameArg = true
-			continue
-		case "--get", "-g":
-			getArg = true
-			continue
-		case "--verbose", "-v":
-			verbose = true
-		case "--token":
-			vaultTokenArg = true
-		case "--help", "-h":
-			fmt.Print(helpMsg)
-			return
-		default:
-			if !strings.Contains(arg, "=") {
-				continue
-			}
+	flag.StringVar(&deployment, "deployment", "", "provide optional configuration deployment")
+	flag.StringVar(&deployment, "d", "", "provide optional configuration deployment")
 
-			param := strings.Split(arg, "=")[1]
+	flag.StringVar(&instance, "instance", "", "provide optional configuration instance")
+	flag.StringVar(&instance, "i", "", "provide optional configuration instance")
 
-			switch {
-			case strings.Contains(arg, "--config"):
-				configDirectory = param
-			case strings.Contains(arg, "--deployment"):
-				deployment = param
-			case strings.Contains(arg, "--instance"):
-				instance = param
-			case strings.Contains(arg, "--hostname"):
-				hostname = param
-			case strings.Contains(arg, "--get"):
-				getPath = param
-			case strings.Contains(arg, "--token"):
-				vaultToken = param
-			}
-		}
+	flag.StringVar(&hostname, "hostname", "", "provide optional configuration hostname")
+
+	flag.StringVar(&getPath, "get", "", "path to the configuration field")
+	flag.StringVar(&getPath, "g", "", "path to the configuration field")
+
+	flag.StringVar(&vaultToken, "token", "", "the vault token")
+	flag.StringVar(&vaultUsername, "username", "", "the vault username (for userpass auth)")
+	flag.StringVar(&vaultPassword, "password", "", "the vault password (for userpass auth)")
+	flag.StringVar(&vaultRoleId, "roleid", "", "the vault roleid (for approle auth)")
+	flag.StringVar(&vaultSecretId, "secretid", "", "the vault secretid (for approle auth)")
+
+	flag.BoolVar(&verbose, "verbose", false, "provide optional configuration verbose option")
+	flag.BoolVar(&verbose, "v", false, "provide optional configuration verbose option")
+
+	flag.BoolVar(&help, "help", false, "help message")
+	flag.BoolVar(&help, "h", false, "help message")
+
+	flag.Parse()
+
+	if help {
+		fmt.Print(helpMsg)
+		return
 	}
 
 	ctx := context.Background()
@@ -129,13 +86,35 @@ func main() {
 		Logger:     logger,
 	}
 
-	if vaultToken != "" {
+	switch {
+	case vaultToken != "":
 		opts.VaultAuth = vaultMock.NewTokenAuth(vaultToken)
+	case vaultUsername != "" && vaultPassword != "":
+		auth, err := userPassAuth.NewUserpassAuth(vaultUsername, &userPassAuth.Password{
+			FromString: vaultPassword,
+		})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+
+		opts.VaultAuth = auth
+	case vaultRoleId != "" && vaultSecretId != "":
+		auth, err := appRoleAuth.NewAppRoleAuth(
+			vaultRoleId,
+			&appRoleAuth.SecretID{FromString: vaultSecretId},
+		)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+
+		opts.VaultAuth = auth
 	}
 
 	cfg, err := goconfig.New(ctx, opts)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
