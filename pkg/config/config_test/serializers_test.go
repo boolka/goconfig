@@ -15,7 +15,6 @@ func TestJsonNumber(t *testing.T) {
 	cfg, err := config.New(ctx, config.Options{
 		Directory: "./testdata/serializers/json",
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -186,7 +186,7 @@ Environment file may be any supported file extension - `.json`, `.yaml` (`.yml`)
 
 #### Vault
 
-If you create `vault.EXT` file then fields from that file will proceed to lookup from vault server. The field has special syntax `mount_path,secret_path,secret_key` where are listed vault secret mount path, secret path, and secret key separated by comma. Suppose we have vault server with configured postgresql secret and started on `http://localhost:8200`. Lets load for example `username` and `password` keys to our config. And suppose for our simple example that vault setup has the `root` token to access. All again: mount - secret, path - postgresql, keys - username, password. Create directory `config` and place `vault.toml` file in to it with contents:
+If you create `vault.EXT` file then fields from that file will proceed to lookup from vault server. Loading vault variables is dynamic too both the same with environment. The field has special syntax `mount_path,secret_path,secret_key` where are listed vault secret mount path, secret path, and secret key separated by comma. Suppose we have vault server with configured postgresql secret and started on `http://localhost:8200`. Lets load for example `username` and `password` keys to our config. And suppose for our simple example that vault setup has the `root` token to access. All again: mount - secret, path - postgresql, keys - username, password. Create directory `config` and place `vault.toml` file in to it with contents:
 
 ```toml
 [postgresql]
@@ -209,7 +209,7 @@ import (
 	"context"
 	"fmt"
 
-	goconfig "github.com/boolka/goconfig"
+	"github.com/boolka/goconfig"
 )
 
 func main() {
