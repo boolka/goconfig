@@ -155,7 +155,7 @@ func New(ctx context.Context, options Options) (cfg *Config, err error) {
 		var src cfgSource
 		var err error
 
-		switch source.file {
+		switch fileName(source.file) {
 		case "env":
 			src = envSrc
 			replaceEntry, err = entry.NewEnv(source)
@@ -260,8 +260,11 @@ type sourceValue struct {
 }
 
 // Get method takes dot delimited configuration path and returns value if any.
+// The last parameter specifies which files to allow for searching both with or without extension.
+// If omitted, all files will be search through.
+// The sequence of transmitted files does not change the original order for searching.
 // Second returned value states if it was found and follows comma ok idiom at all.
-func (c *Config) Get(ctx context.Context, path string) (any, bool) {
+func (c *Config) Get(ctx context.Context, path string, files ...string) (any, bool) {
 	if c.logger != nil && c.logger.Enabled(ctx, slog.LevelDebug) {
 		ctx = ContextWithLogger(ctx, c.logger)
 		c.logger.DebugContext(ctx, fmt.Sprintf(`trying to get "%s" field`, path))
@@ -279,7 +282,13 @@ func (c *Config) Get(ctx context.Context, path string) (any, bool) {
 			}
 		}()
 
-		v, ok := searchThroughSources(ctx, c.sources, path)
+		var cfgSources []configEntry = c.sources
+
+		if len(files) != 0 {
+			cfgSources = filterSources(ctx, c.sources, files...)
+		}
+
+		v, ok := searchThroughSources(ctx, cfgSources, path)
 
 		value <- sourceValue{
 			v:  v,
@@ -296,7 +305,7 @@ func (c *Config) Get(ctx context.Context, path string) (any, bool) {
 }
 
 // MustGet method is the same as Get except that it panics if the path does not exist
-func (c *Config) MustGet(ctx context.Context, path string) any {
+func (c *Config) MustGet(ctx context.Context, path string, files ...string) any {
 	if c.logger != nil && c.logger.Enabled(ctx, slog.LevelDebug) {
 		ctx = ContextWithLogger(ctx, c.logger)
 		c.logger.DebugContext(ctx, fmt.Sprintf(`trying to get "%s" field`, path))
@@ -307,7 +316,13 @@ func (c *Config) MustGet(ctx context.Context, path string) any {
 	go func() {
 		defer close(value)
 
-		v, ok := searchThroughSources(ctx, c.sources, path)
+		var cfgSources []configEntry = c.sources
+
+		if len(files) != 0 {
+			cfgSources = filterSources(ctx, c.sources, files...)
+		}
+
+		v, ok := searchThroughSources(ctx, cfgSources, path)
 
 		value <- sourceValue{
 			v:  v,
@@ -330,7 +345,7 @@ func (c *Config) MustGet(ctx context.Context, path string) any {
 // Return created or directly passed vault client
 func (c *Config) GetVaultClient() *vault.Client {
 	for _, source := range c.sources {
-		if source.file == "vault" {
+		if fileName(source.file) == "vault" {
 			if e, ok := source.Entry.(*entry.VaultEntry); ok {
 				return e.Client()
 			}
@@ -338,6 +353,20 @@ func (c *Config) GetVaultClient() *vault.Client {
 	}
 
 	return nil
+}
+
+func filterSources(ctx context.Context, sources []configEntry, files ...string) []configEntry {
+	var cfgSources []configEntry
+
+	for _, source := range sources {
+		if slices.ContainsFunc(files, func(file string) bool {
+			return source.file == file || fileName(source.file) == file
+		}) {
+			cfgSources = append(cfgSources, source)
+		}
+	}
+
+	return cfgSources
 }
 
 func searchThroughSources(ctx context.Context, sources []configEntry, path string) (any, bool) {

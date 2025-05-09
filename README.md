@@ -71,8 +71,8 @@ SYSLOG_NG_DOMAIN=custom-syslog-ng-domain go run ./cfg.go
 ### Api
 
 - `New(context.Context, config.Options) (*config.Config, error)`. Creates new config instance. Provide `config.Options` object to set config path and etc. If configuration directory is empty the `ErrEmptyDir` sentinel error will be returned.
-- `(*config.Config) Get(context.Context, path string) (any, bool)`. Get method takes dot delimited configuration path and returns value if any. Second returned value states if it was found and follows comma ok idiom at all.
-- `(*config.Config) MustGet(context.Context, path string) any`. MustGet method is the same as Get except that it panics if the path does not exist.
+- `(*config.Config) Get(context.Context, path string, files ...string) (any, bool)`. Get method takes dot delimited configuration path and returns value if any. The last parameter specifies which files to allow for searching both with or without extension. If omitted, all files will be search through. The sequence of transmitted files does not change the original order for searching. Second returned value states if it was found and follows comma ok idiom at all.
+- `(*config.Config) MustGet(context.Context, path string, files ...string) any`. MustGet method is the same as Get except that it panics if the path does not exist.
 - `(*config.Config) GetVaultClient() *vault.Client`. Returns vault client created and configured or provided directly by option.
 
 #### Config options
@@ -223,7 +223,17 @@ func main() {
 }
 ```
 
-If you create correct vault secret with keys `username` and `password` and provide access then these values was printed. Managing vault auth methods, policies and secrets is out of scope.
+If you create correct vault secret with keys `username` and `password` and provide access then these values was printed.
+
+To check that certain field available direct from vault source you need to specify files argument:
+
+```go
+if password, ok := cfg.Get(ctx, "postgresql.password", "vault"); ok {
+	// available from vault source
+}
+```
+
+Managing vault auth methods, policies and secrets is out of scope.
 
 ##### Vault Configuration
 

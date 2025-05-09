@@ -1,4 +1,4 @@
 "local-testing" = "local-testing.toml"
-"env" = "TEST_FILE_ENV"
+"env" = "local-testing.toml"
 "vault" = "local-testing.toml"
-"local-testing-1" = "local-testing-1.toml"
+"local-testing-1" = "local-testing.toml"

@@ -1,3 +1,9 @@
+# v1.1.0
+
+- add ability to find from certain file sources
+- fix common test case config files
+- update README.md
+
 # v1.0.1
 
 - add vault auth username/password & roleid/secretid params for cli usage
