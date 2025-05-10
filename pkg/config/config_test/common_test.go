@@ -336,7 +336,10 @@ func TestConcurrent(t *testing.T) {
 	ctx := context.Background()
 
 	cfg, err := config.New(ctx, config.Options{
-		Directory: "testdata/config",
+		Directory:  "testdata/config",
+		Instance:   "1",
+		Deployment: "testing",
+		Hostname:   "host-name",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -403,4 +406,88 @@ func TestConcurrent(t *testing.T) {
 	if err := eg.Wait(); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestGetFromCertainSource(t *testing.T) {
+	ctx := context.Background()
+
+	cfg, err := config.New(ctx, config.Options{
+		Directory:  "testdata/config",
+		Instance:   "1",
+		Deployment: "testing",
+		Hostname:   "host-name",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if v, ok := cfg.Get(ctx, "host-name-testing-1"); !ok || v != "host-name-testing-1.toml" {
+		t.Fatal(v, ok)
+	}
+
+	if v, ok := cfg.Get(ctx, "host-name-testing-1", "default"); !ok || v != "default.json" {
+		t.Fatal(v, ok)
+	}
+
+	if v, ok := cfg.Get(ctx, "host-name-testing-1", "default.json"); !ok || v != "default.json" {
+		t.Fatal(v, ok)
+	}
+}
+
+func TestGetFromCertainSourceIndifferentOrder(t *testing.T) {
+	ctx := context.Background()
+
+	cfg, err := config.New(ctx, config.Options{
+		Directory:  "testdata/config",
+		Instance:   "1",
+		Deployment: "testing",
+		Hostname:   "host-name",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if v, ok := cfg.Get(ctx, "default-1", "default.json", "default-1.json"); !ok || v != "default-1.json" {
+		t.Fatal(v, ok)
+	}
+
+	if v, ok := cfg.Get(ctx, "default-1", "default-1.json", "default.json"); !ok || v != "default-1.json" {
+		t.Fatal(v, ok)
+	}
+}
+
+func TestMustGetFromCertainSource(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("must panic")
+		}
+	}()
+
+	ctx := context.Background()
+
+	cfg, err := config.New(ctx, config.Options{
+		Directory:  "testdata/config",
+		Instance:   "1",
+		Deployment: "testing",
+		Hostname:   "host-name",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if v := cfg.MustGet(ctx, "host-name-testing-1"); v != "host-name-testing-1.toml" {
+		t.Fatal(v)
+	}
+
+	if v := cfg.MustGet(ctx, "host-name-testing-1", "default"); v != "default.json" {
+		t.Fatal(v)
+	}
+
+	if v := cfg.MustGet(ctx, "host-name-testing-1", "default.json"); v != "default.json" {
+		t.Fatal(v)
+	}
+
+	cfg.MustGet(ctx, "default", "local")
 }

@@ -89,3 +89,56 @@ func TestVaultTokenAuthFromFile(t *testing.T) {
 		t.Fatal(v, ok)
 	}
 }
+
+func TestVaultGetCertainSource(t *testing.T) {
+	ctx := context.Background()
+
+	cfg, err := config.New(ctx, config.Options{
+		Directory: "testdata/vault/config",
+		VaultAuth: vaultMock.NewTokenAuth("root"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if v, ok := cfg.Get(ctx, "password1"); !ok || v != "password1_default" {
+		t.Fatal(v, ok)
+	}
+	if v, ok := cfg.Get(ctx, "userpass.password2"); !ok || v != "password2_default" {
+		t.Fatal(v, ok)
+	}
+
+	if v, ok := cfg.Get(ctx, "password1", "vault"); ok {
+		t.Fatal(v, ok)
+	}
+	if v, ok := cfg.Get(ctx, "userpass.password2", "vault"); ok {
+		t.Fatal(v, ok)
+	}
+}
+
+func TestVaultMustGetCertainSource(t *testing.T) {
+	ctx := context.Background()
+
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("must panic")
+		}
+	}()
+
+	cfg, err := config.New(ctx, config.Options{
+		Directory: "testdata/vault/config",
+		VaultAuth: vaultMock.NewTokenAuth("root"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if v, ok := cfg.Get(ctx, "password1"); !ok || v != "password1_default" {
+		t.Fatal(v, ok)
+	}
+	if v, ok := cfg.Get(ctx, "userpass.password2"); !ok || v != "password2_default" {
+		t.Fatal(v, ok)
+	}
+
+	cfg.MustGet(ctx, "password1", "vault")
+}

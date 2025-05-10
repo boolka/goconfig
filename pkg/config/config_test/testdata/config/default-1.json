@@ -1,15 +1,15 @@
 {
   "default-1": "default-1.json",
-  "env": "TEST_FILE_ENV",
+  "env": "default-1.json",
   "vault": "default-1.json",
-  "host-name-1": "host-name-1.toml",
-  "host-name-testing-1": "host-name-testing-1.toml",
-  "host-name-testing": "host-name-testing.toml",
-  "host-name": "host-name.toml",
-  "local-1": "local-1.toml",
-  "local-testing-1": "local-testing-1.toml",
-  "local-testing": "local-testing.toml",
-  "local": "local.toml",
-  "testing-1": "testing-1.yaml",
-  "testing": "testing.yaml"
+  "host-name-1": "default-1.json",
+  "host-name-testing-1": "default-1.json",
+  "host-name-testing": "default-1.json",
+  "host-name": "default-1.json",
+  "local-1": "default-1.json",
+  "local-testing-1": "default-1.json",
+  "local-testing": "default-1.json",
+  "local": "default-1.json",
+  "testing-1": "default-1.json",
+  "testing": "default-1.json"
 }

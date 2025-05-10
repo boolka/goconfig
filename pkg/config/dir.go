@@ -55,7 +55,7 @@ func loadDir(ctx context.Context, fsys fs.ReadDirFS, directory string, hostname,
 		sources = append(sources, configEntry{
 			Entry:  newEntry,
 			source: source,
-			file:   fName,
+			file:   dirEntry.Name(),
 		})
 	}
 
