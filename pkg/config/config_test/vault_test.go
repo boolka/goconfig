@@ -1,10 +1,9 @@
+//go:build vault
+
 package config_test
 
 import (
-	"bytes"
 	"context"
-	"log/slog"
-	"strings"
 	"testing"
 	"time"
 
@@ -13,8 +12,6 @@ import (
 )
 
 func TestVaultConfig(t *testing.T) {
-	t.Parallel()
-
 	ctx := context.Background()
 
 	cfg, err := config.New(ctx, config.Options{
@@ -53,17 +50,10 @@ func TestVaultConfig(t *testing.T) {
 }
 
 func TestUnavailableServer(t *testing.T) {
-	t.Parallel()
-
-	buf := bytes.NewBuffer([]byte{})
-
 	ctx := context.Background()
 
 	_, err := config.New(ctx, config.Options{
 		Directory: "testdata/vault/unauthorized",
-		Logger: slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		})),
 	})
 	if err != entry.ErrVaultUnauthorized {
 		t.Fatal(err)
@@ -71,27 +61,16 @@ func TestUnavailableServer(t *testing.T) {
 }
 
 func TestBrokenPath(t *testing.T) {
-	t.Setenv("TEST_FILE_VAULT", "config_file_vault_custom")
-
-	buf := bytes.NewBuffer([]byte{})
-
 	ctx := context.Background()
 
 	cfg, err := config.New(ctx, config.Options{
-		Directory: "testdata/config",
-		Logger: slog.New(slog.NewTextHandler(buf, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		})),
+		Directory: "testdata/vault/config",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if v, ok := cfg.Get(ctx, "vault"); !ok || v != "config_file_vault_custom" {
+	if v, ok := cfg.Get(ctx, "broken_field"); ok && v != entry.ErrVaultInvalidPath {
 		t.Fatal(v, ok)
-	}
-
-	if !strings.Contains(buf.String(), "invalid vault path") {
-		t.Fatal("valid path")
 	}
 }

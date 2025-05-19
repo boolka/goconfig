@@ -551,24 +551,8 @@ func TestGoconfigVerboseError(t *testing.T) {
 func TestGoconfigVaultTokenError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-
 	vaultServer := vaultMock.NewServer("root")
 	t.Cleanup(vaultServer.Close)
-	vaultClient := vaultMock.NewClient(vaultServer.URL, "root", vaultServer.Client())
-
-	err := vaultClient.WriteSecret(ctx, "secret", "goconfig_cmd_secret", map[string]any{
-		"password": "abc123",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		err = vaultClient.DeleteSecret(ctx, "secret", "goconfig_cmd_secret")
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
 
 	d := TmpConfigDir(t)
 
@@ -577,7 +561,7 @@ func TestGoconfigVaultTokenError(t *testing.T) {
 	CreateConfigFile(d, "vault.toml", `password="secret,goconfig_cmd_secret"`)
 
 	testCases := [][]string{
-		{"go", "run", "./goconfig.go", "--config=" + d, "--get=password", "--token", "root1"},
+		{"go", "run", "./goconfig.go", "--config=" + d, "--get=password", "--token", "broken_token"},
 	}
 
 	for i, testCase := range testCases {
@@ -589,15 +573,8 @@ func TestGoconfigVaultTokenError(t *testing.T) {
 			cmd.Stderr = &stderr
 
 			err := cmd.Run()
-			if err != nil {
+			if err == nil {
 				t.Fatal(err, stderr.String())
-			}
-
-			if stdout.String() != `qwerty123456` {
-				t.Fatal(stdout.String())
-			}
-			if stderr.String() != "" {
-				t.Fatal(stderr.String())
 			}
 		})
 	}

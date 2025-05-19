@@ -8,6 +8,12 @@ import (
 )
 
 func loadVaultConfig(ctx context.Context, config *vault.Config, entries []configEntry) *vault.Config {
+	if isEnable, ok := searchThroughSources(ctx, entries, "goconfig.vault.enable"); ok {
+		if isEnable, ok := isEnable.(bool); ok && !isEnable {
+			return nil
+		}
+	}
+
 	if address, ok := searchThroughSources(ctx, entries, "goconfig.vault.address"); ok {
 		if address, ok := address.(string); ok {
 			config.Address = address

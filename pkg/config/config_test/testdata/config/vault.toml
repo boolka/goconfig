@@ -1,4 +1,0 @@
-vault = "vault.toml"
-
-[goconfig.vault.auth]
-token = "root"

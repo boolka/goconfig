@@ -1,3 +1,10 @@
+# v1.2.0
+
+- check vault server availability at startup
+- add option to completely disable vault source
+- test fixes
+- update README.md
+
 # v1.1.0
 
 - add ability to find from certain file sources

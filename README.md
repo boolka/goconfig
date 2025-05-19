@@ -186,7 +186,9 @@ Environment file may be any supported file extension - `.json`, `.yaml` (`.yml`)
 
 #### Vault
 
-If you create `vault.EXT` file then fields from that file will proceed to lookup from vault server. Loading vault variables is dynamic too both the same with environment. The field has special syntax `mount_path,secret_path,secret_key` where are listed vault secret mount path, secret path, and secret key separated by comma. Suppose we have vault server with configured postgresql secret and started on `http://localhost:8200`. Lets load for example `username` and `password` keys to our config. And suppose for our simple example that vault setup has the `root` token to access. All again: mount - secret, path - postgresql, keys - username, password. Create directory `config` and place `vault.toml` file in to it with contents:
+If you create `vault.EXT` file then fields from that file will proceed to lookup from vault server. When *goconfig* instance was created then vault domain will be checkup. If you want to disable vault lookup on some configurations then use `goconfig.vault.enable` system option. All vault system options will be explained below.
+
+Loading vault variables is dynamic too both the same with environment. The field has special syntax `mount_path,secret_path,secret_key` where are listed vault secret mount path, secret path, and secret key separated by comma. Suppose we have vault server with configured postgresql secret and started on `http://localhost:8200`. Lets load for example `username` and `password` keys to our config. And suppose for our simple example that vault setup has the `root` token to access. All again: mount - secret, path - postgresql, keys - username, password. Create directory `config` and place `vault.toml` file in to it with contents:
 
 ```toml
 [postgresql]
@@ -245,11 +247,14 @@ So, before we can use vault keys we must configure vault client. There are two w
 ```toml
 [goconfig.vault]
 address = "http://127.0.0.1:8200"
+enable = false
 min_retry_wait = "3"
 max_retry_wait = "5"
 max_retries = "10"
 timeout = "30"
 ```
+
+You can specify optional `enable` param to turn off vault on specific configuration environment.
 
 Params `min_retry_wait`, `max_retry_wait`, `max_retries` and `timeout` must be specified as strings. Their values treated as seconds when specified without postfix. Otherwise the value will be supplied to `time.ParseDuration` function.
 
@@ -286,7 +291,7 @@ It is not acceptable in many cases to provide credentials directly to file. So y
 
 ```toml
 [goconfig.vault.auth]
-token = "VAULT_TOKEN"
+token = "CUSTOM_VAULT_TOKEN"
 ```
 
 And so on for other cases.

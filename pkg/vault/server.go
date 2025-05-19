@@ -89,6 +89,16 @@ func NewServer(token string) *httptest.Server {
 		rw.WriteHeader(http.StatusOK)
 	})
 
+	// lookup self token
+	mux.HandleFunc("GET /v1/auth/token/lookup-self", func(rw http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Vault-Token") != token {
+			rw.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		rw.WriteHeader(http.StatusOK)
+	})
+
 	// create user
 	mux.HandleFunc("POST /v1/auth/userpass/users/{username}", func(rw http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Vault-Token") != token {

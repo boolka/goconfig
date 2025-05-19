@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/boolka/goconfig/pkg/entry"
+	tokenRoleAuth "github.com/boolka/goconfig/pkg/vault"
 	vault "github.com/hashicorp/vault/api"
 	appRoleAuth "github.com/hashicorp/vault/api/auth/approle"
 	userPassAuth "github.com/hashicorp/vault/api/auth/userpass"
@@ -150,6 +151,10 @@ func New(ctx context.Context, options Options) (cfg *Config, err error) {
 		sources = append(sources, dirSources...)
 	}
 
+	slices.SortFunc(sources, func(a, b configEntry) int {
+		return int(b.source) - int(a.source)
+	})
+
 	for i, source := range sources {
 		var replaceEntry entry.Entry
 		var src cfgSource
@@ -166,6 +171,13 @@ func New(ctx context.Context, options Options) (cfg *Config, err error) {
 			if vaultClient == nil {
 				// load vault config from source files
 				vaultCfg := loadVaultConfig(ctx, vault.DefaultConfig(), sources)
+
+				// vault disabled
+				if vaultCfg == nil {
+					// remove correspond file from sources
+					sources = slices.Delete(sources, i, i+1)
+					continue
+				}
 
 				// set goconfig logger
 				if options.Logger != nil {
@@ -186,7 +198,7 @@ func New(ctx context.Context, options Options) (cfg *Config, err error) {
 
 				switch authType {
 				case tokenVaultConfigAuthType:
-					vaultClient.SetToken(creds[0])
+					vaultAuth = tokenRoleAuth.NewTokenAuth(creds[0])
 				case appRoleVaultConfigAuthType:
 					roleId := creds[0]
 					secretId := creds[1]
@@ -231,10 +243,6 @@ func New(ctx context.Context, options Options) (cfg *Config, err error) {
 			file:   source.file,
 		}
 	}
-
-	slices.SortFunc(sources, func(a, b configEntry) int {
-		return int(b.source) - int(a.source)
-	})
 
 	if logger != nil && logger.Enabled(ctx, slog.LevelDebug) {
 		for i, source := range sources {

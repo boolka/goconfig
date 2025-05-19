@@ -190,13 +190,9 @@ func TestVaultBrokenTokenAuth(t *testing.T) {
 
 	client.SetToken("broken")
 
-	v, err := NewVault(ctx, tomlEntry, client, nil)
-	if err != nil {
+	_, err = NewVault(ctx, tomlEntry, client, nil)
+	if err == nil {
 		t.Fatal(err)
-	}
-
-	if v, ok := v.Get(ctx, "password1"); ok {
-		t.Fatal(v, ok)
 	}
 }
 
@@ -544,6 +540,14 @@ func TestVaultAppRoleAuthDenied(t *testing.T) {
 func TestVaultBrokenPath(t *testing.T) {
 	ctx := context.Background()
 
+	vaultServer := vaultMock.NewServer("root")
+	t.Cleanup(func() {
+		vaultServer.Close()
+	})
+
+	vaultCfg := vault.DefaultConfig()
+	vaultCfg.Address = vaultServer.URL
+
 	f, err := os.Open("./testdata/vault.toml")
 	if err != nil {
 		t.Fatal(err)
@@ -557,7 +561,7 @@ func TestVaultBrokenPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client, err := vault.NewClient(nil)
+	client, err := vault.NewClient(vaultCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
