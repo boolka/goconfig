@@ -29,11 +29,11 @@ func TestConfigSourcesPrecedence(t *testing.T) {
 		t.Fatal("incorrect order of sources")
 	}
 
-	if len(cfg.sources) != 14 {
+	if len(cfg.sources) != 13 {
 		for i, source := range cfg.sources {
 			t.Error(i, source.file)
 		}
-		t.Fatal("expected", 14, "found", len(cfg.sources))
+		t.Fatal("expected", 13, "found", len(cfg.sources))
 	}
 }
 
@@ -59,10 +59,10 @@ func TestConfigFileSystem(t *testing.T) {
 		t.Fatal("incorrect order of sources")
 	}
 
-	if len(cfg.sources) != 14 {
+	if len(cfg.sources) != 13 {
 		for i, source := range cfg.sources {
 			t.Error(i, source.file)
 		}
-		t.Fatal("expected", 14, "found", len(cfg.sources))
+		t.Fatal("expected", 13, "found", len(cfg.sources))
 	}
 }

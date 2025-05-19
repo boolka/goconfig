@@ -47,6 +47,11 @@ func NewVault(ctx context.Context, entry Entry, client *vault.Client, auth vault
 		}
 	}
 
+	_, err := client.Auth().Token().LookupSelf()
+	if err != nil {
+		return nil, err
+	}
+
 	return &VaultEntry{
 		client: client,
 		entry:  entry,

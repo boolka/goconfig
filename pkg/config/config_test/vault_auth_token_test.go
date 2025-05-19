@@ -73,7 +73,7 @@ func TestVaultTokenAuthFromFile(t *testing.T) {
 	ctx := context.Background()
 	prepareVaultSecret(ctx, t, "root")
 
-	t.Setenv("VAULT_TOKEN", "root")
+	t.Setenv("CUSTOM_VAULT_TOKEN", "root")
 
 	cfg, err := config.New(ctx, config.Options{
 		Directory: "testdata/vault/token",
@@ -141,4 +141,40 @@ func TestVaultMustGetCertainSource(t *testing.T) {
 	}
 
 	cfg.MustGet(ctx, "password1", "vault")
+}
+
+func TestVaultInitializationInvalidToken(t *testing.T) {
+	ctx := context.Background()
+
+	t.Setenv("CUSTOM_VAULT_TOKEN", "invalid_token")
+
+	_, err := config.New(ctx, config.Options{
+		Directory: "testdata/vault/token",
+	})
+	if err == nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVaultInitializationDisableVault(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := config.New(ctx, config.Options{
+		Directory: "testdata/vault/disabled",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVaultInitializationEnableVault(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := config.New(ctx, config.Options{
+		Directory:  "testdata/vault/disabled",
+		Deployment: "production",
+	})
+	if err == nil {
+		t.Fatal(err)
+	}
 }
