@@ -49,8 +49,9 @@ type Options struct {
 
 type configEntry struct {
 	entry.Entry
-	source cfgSource
-	file   string
+	source  cfgSource
+	file    string
+	disable bool
 }
 
 type Config struct {
@@ -155,93 +156,93 @@ func New(ctx context.Context, options Options) (cfg *Config, err error) {
 		return int(b.source) - int(a.source)
 	})
 
-	for i, source := range sources {
-		var replaceEntry entry.Entry
-		var src cfgSource
-		var err error
-
-		switch fileName(source.file) {
-		case "env":
-			src = envSrc
-			replaceEntry, err = entry.NewEnv(source)
-		case "vault":
-			src = vaultSrc
-			var vaultClient *vault.Client = options.VaultClient
-
-			if vaultClient == nil {
-				// load vault config from source files
-				vaultCfg := loadVaultConfig(ctx, vault.DefaultConfig(), sources)
-
-				// vault disabled
-				if vaultCfg == nil {
-					// remove correspond file from sources
-					sources = slices.Delete(sources, i, i+1)
-					continue
-				}
-
-				// set goconfig logger
-				if options.Logger != nil {
-					vaultCfg.Logger = options.Logger
-				}
-
-				vaultClient, err = vault.NewClient(vaultCfg)
-				if err != nil {
-					return nil, fmt.Errorf("can't create vault client: %w\n", err)
-				}
-			}
-
-			var vaultAuth = options.VaultAuth
-
-			if vaultAuth == nil {
-				// trying to load auth from source files
-				authType, creds := loadVaultAuth(ctx, sources)
-
-				switch authType {
-				case tokenVaultConfigAuthType:
-					vaultAuth = tokenRoleAuth.NewTokenAuth(creds[0])
-				case appRoleVaultConfigAuthType:
-					roleId := creds[0]
-					secretId := creds[1]
-					mount := creds[2]
-
-					vaultAuth, err = appRoleAuth.NewAppRoleAuth(roleId,
-						&appRoleAuth.SecretID{FromString: secretId},
-						appRoleAuth.WithMountPath(mount),
-					)
-					if err != nil {
-						return nil, fmt.Errorf("invalid approle auth credentials: %w", err)
-					}
-				case userNameVaultConfigAuthType:
-					username := creds[0]
-					password := creds[1]
-					mount := creds[2]
-
-					vaultAuth, err = userPassAuth.NewUserpassAuth(username,
-						&userPassAuth.Password{FromString: password},
-						userPassAuth.WithMountPath(mount),
-					)
-					if err != nil {
-						return nil, fmt.Errorf("invalid username auth credentials: %w", err)
-					}
-				case unknownVaultConfigAuthType:
-					return nil, entry.ErrVaultUnauthorized
-				}
-			}
-
-			replaceEntry, err = entry.NewVault(ctx, source, vaultClient, vaultAuth)
-		default:
+	// replace env sources
+	for i := range sources {
+		if sources[i].source != envSrc {
 			continue
 		}
 
+		entry, err := entry.NewEnv(ctx, sources[i])
 		if err != nil {
 			return nil, err
 		}
 
-		sources[i] = configEntry{
-			Entry:  replaceEntry,
-			source: src,
-			file:   source.file,
+		sources[i].Entry = entry
+	}
+
+	// replace vault sources
+	for i := range sources {
+		if sources[i].source != vaultSrc {
+			continue
 		}
+
+		var vaultClient *vault.Client = options.VaultClient
+
+		if vaultClient == nil {
+			// load vault config from source files
+			vaultCfg := loadVaultConfig(ctx, vault.DefaultConfig(), sources)
+
+			// vault disabled
+			if vaultCfg == nil {
+				sources[i].disable = true
+				continue
+			}
+
+			// set goconfig logger
+			if options.Logger != nil {
+				vaultCfg.Logger = options.Logger
+			}
+
+			vaultClient, err = vault.NewClient(vaultCfg)
+			if err != nil {
+				return nil, fmt.Errorf("can't create vault client: %w\n", err)
+			}
+		}
+
+		var vaultAuth = options.VaultAuth
+
+		if vaultAuth == nil {
+			// trying to load auth from source files
+			authType, creds := loadVaultAuth(ctx, sources)
+
+			switch authType {
+			case tokenVaultConfigAuthType:
+				vaultAuth = tokenRoleAuth.NewTokenAuth(creds[0])
+			case appRoleVaultConfigAuthType:
+				roleId := creds[0]
+				secretId := creds[1]
+				mount := creds[2]
+
+				vaultAuth, err = appRoleAuth.NewAppRoleAuth(roleId,
+					&appRoleAuth.SecretID{FromString: secretId},
+					appRoleAuth.WithMountPath(mount),
+				)
+				if err != nil {
+					return nil, fmt.Errorf("invalid approle auth credentials: %w", err)
+				}
+			case userNameVaultConfigAuthType:
+				username := creds[0]
+				password := creds[1]
+				mount := creds[2]
+
+				vaultAuth, err = userPassAuth.NewUserpassAuth(username,
+					&userPassAuth.Password{FromString: password},
+					userPassAuth.WithMountPath(mount),
+				)
+				if err != nil {
+					return nil, fmt.Errorf("invalid username auth credentials: %w", err)
+				}
+			case unknownVaultConfigAuthType:
+				return nil, entry.ErrVaultUnauthorized
+			}
+		}
+
+		entry, err := entry.NewVault(ctx, sources[i], vaultClient, vaultAuth)
+		if err != nil {
+			return nil, err
+		}
+
+		sources[i].Entry = entry
 	}
 
 	if logger != nil && logger.Enabled(ctx, slog.LevelDebug) {
@@ -382,6 +383,10 @@ func searchThroughSources(ctx context.Context, sources []configEntry, path strin
 	var ok bool
 
 	for _, source := range sources {
+		if source.disable {
+			continue
+		}
+
 		v, ok = source.Get(ctx, path)
 
 		if ok {

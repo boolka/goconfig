@@ -24,7 +24,7 @@ func TestEnv(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	envEntry, err := entry.NewEnv(tomlEntry)
+	envEntry, err := entry.NewEnv(ctx, tomlEntry)
 	if err != nil {
 		t.Fatal(err)
 	}

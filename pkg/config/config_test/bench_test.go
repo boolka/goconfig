@@ -9,7 +9,6 @@ import (
 
 func BenchmarkConfig(b *testing.B) {
 	b.Setenv("TEST_FILE_ENV", "config_file_env_custom")
-	b.Setenv("TEST_FILE_VAULT", "config_file_vault_custom")
 
 	ctx := context.Background()
 
@@ -20,7 +19,6 @@ func BenchmarkConfig(b *testing.B) {
 			Deployment: "testing",
 			Hostname:   "host-name",
 		})
-
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -74,10 +72,6 @@ func BenchmarkConfig(b *testing.B) {
 		}
 
 		if v, ok := cfg.Get(ctx, "env"); !ok || v != "config_file_env_custom" {
-			b.Fatal(v, ok)
-		}
-
-		if v, ok := cfg.Get(ctx, "vault"); !ok || v != "config_file_vault_custom" {
 			b.Fatal(v, ok)
 		}
 	}

@@ -86,7 +86,7 @@ func TestVaultUserPassAuthFromFile(t *testing.T) {
 	prepareVaultUserName(ctx, t, "root")
 	prepareVaultSecret(ctx, t, "root")
 
-	t.Setenv("VAULT_PASSWORD", "goconfig_vault_password")
+	t.Setenv("CUSTOM_VAULT_PASSWORD", "goconfig_vault_password")
 
 	cfg, err := config.New(ctx, config.Options{
 		Directory: "testdata/vault/userpass",

@@ -58,7 +58,6 @@ func TestEnvConfigPath(t *testing.T) {
 
 func TestCascadeConfig(t *testing.T) {
 	t.Setenv("TEST_FILE_ENV", "config_file_env_custom")
-	t.Setenv("TEST_FILE_VAULT", "config_file_vault_custom")
 
 	ctx := context.Background()
 
@@ -121,10 +120,6 @@ func TestCascadeConfig(t *testing.T) {
 	}
 
 	if v, ok := cfg.Get(ctx, "env"); !ok || v != "config_file_env_custom" {
-		t.Fatal(v, ok)
-	}
-
-	if v, ok := cfg.Get(ctx, "vault"); !ok || v != "config_file_vault_custom" {
 		t.Fatal(v, ok)
 	}
 }
@@ -331,7 +326,6 @@ func TestMultiSource(t *testing.T) {
 
 func TestConcurrent(t *testing.T) {
 	t.Setenv("TEST_FILE_ENV", "config_file_env_custom")
-	t.Setenv("TEST_FILE_VAULT", "config_file_vault_custom")
 
 	ctx := context.Background()
 
@@ -359,7 +353,6 @@ func TestConcurrent(t *testing.T) {
 		"local-testing",
 		"local-testing-1",
 		"env",
-		"vault",
 	}
 
 	values := map[string]string{
@@ -376,7 +369,6 @@ func TestConcurrent(t *testing.T) {
 		"local-testing":       "local-testing.toml",
 		"local-testing-1":     "local-testing-1.toml",
 		"env":                 "config_file_env_custom",
-		"vault":               "config_file_vault_custom",
 	}
 
 	eg := errgroup.Group{}

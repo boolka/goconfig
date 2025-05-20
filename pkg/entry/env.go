@@ -9,7 +9,7 @@ type EnvEntry struct {
 	entry Entry
 }
 
-func NewEnv(entry Entry) (*EnvEntry, error) {
+func NewEnv(ctx context.Context, entry Entry) (*EnvEntry, error) {
 	return &EnvEntry{
 		entry: entry,
 	}, nil

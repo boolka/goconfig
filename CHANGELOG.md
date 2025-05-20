@@ -1,3 +1,8 @@
+# v1.2.1
+
+- fix directory sources recognition
+- fix sources post modification
+
 # v1.2.0
 
 - check vault server availability at startup

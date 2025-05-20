@@ -32,6 +32,8 @@ func fileSource(filename, hostname string) (cfgSource, string, string) {
 		return locDepInstSrc, fileSplit[1], fileSplit[2]
 	case filename == "env":
 		return envSrc, "", ""
+	case filename == "vault":
+		return vaultSrc, "", ""
 	case strings.Contains(filename, hostname) && hostname != "":
 		filename = strings.TrimPrefix(filename, hostname+"-")
 
