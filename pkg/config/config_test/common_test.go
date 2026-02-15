@@ -298,7 +298,7 @@ func TestMustGetContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	cfg.MustGet(ctx, "default")
+	cfg.MustGet(ctx, "not found")
 }
 
 func TestMultiSource(t *testing.T) {
