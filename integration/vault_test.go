@@ -1,0 +1,80 @@
+package integration
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	"github.com/boolka/goconfig/pkg/config"
+	vault "github.com/boolka/goconfig/pkg/vault"
+	vaultStub "github.com/boolka/goconfig/pkg/vault_stub"
+	vaultApi "github.com/hashicorp/vault/api"
+)
+
+const (
+	vaultToken = "root"
+	vaultAddr  = "http://127.0.0.1:8200"
+)
+
+func prepareSecret(ctx context.Context, t *testing.T) {
+	vaultStubClient := vaultStub.NewVaultClient(vaultAddr, vaultToken, http.DefaultClient)
+
+	err := vaultStubClient.WriteSecret(ctx, "secret", "goconfig_secret", map[string]any{
+		"password1": "abc123",
+		"password2": "correct horse battery staple",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = vaultStubClient.DeleteSecret(ctx, "secret", "goconfig_secret")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestVault(t *testing.T) {
+	ctx := context.Background()
+
+	prepareSecret(ctx, t)
+
+	vaultCfg := vaultApi.DefaultConfig()
+	vaultCfg.Address = vaultAddr
+
+	client, err := vaultApi.NewClient(vaultCfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.SetToken(vaultToken)
+
+	cfg, err := config.New(ctx, config.Options{
+		Directory:   "testdata/config",
+		VaultClient: client,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if v, ok := cfg.Get(ctx, "password1"); !ok || v != "abc123" {
+		t.Fatal(v, ok)
+	}
+	if v, ok := cfg.Get(ctx, "userpass.password2"); !ok || v != "correct horse battery staple" {
+		t.Fatal(v, ok)
+	}
+}
+
+func TestVaultBrokenPath(t *testing.T) {
+	ctx := context.Background()
+
+	cfg, err := config.New(ctx, config.Options{
+		Directory: "testdata/config",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if v, ok := cfg.Get(ctx, "broken_field"); ok || v != vault.ErrInvalidPath {
+		t.Fatal(v, ok)
+	}
+}

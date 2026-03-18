@@ -1,0 +1,33 @@
+name: integration
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ["1.25.x", "1.26.x"]
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: docker
+        uses: docker/setup-docker-action@v4
+      - name: check docker
+        run: |
+          docker version
+          docker info
+      - name: go prepare
+        run: go mod download
+      - name: integration tests
+        run: |
+          docker run -d -p 8200:8200 hashicorp/vault server -dev -dev-root-token-id=root start
+          sleep 10
+          docker ps -a
+      - name: test
+        run: go test -tags goconfig_vault -race -count 1 ./integration/...

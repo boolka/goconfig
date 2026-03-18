@@ -4,14 +4,16 @@ import (
 	"context"
 	"io/fs"
 	"path/filepath"
+	"strings"
 
-	"github.com/boolka/goconfig/pkg/entry"
+	"github.com/boolka/goconfig/pkg/datamap"
+	"github.com/boolka/goconfig/pkg/source"
 )
 
-func loadDir(ctx context.Context, fsys fs.ReadDirFS, directory string, hostname, deployment, instance string) ([]configEntry, error) {
-	var sources []configEntry
+func loadDir(ctx context.Context, dirFs fs.ReadDirFS, directory string, hostname string) ([]*source.Source, error) {
+	var sources []*source.Source
 
-	dirEntries, err := fs.ReadDir(fsys, directory)
+	dirEntries, err := fs.ReadDir(dirFs, directory)
 	if err != nil {
 		return nil, err
 	}
@@ -21,42 +23,22 @@ func loadDir(ctx context.Context, fsys fs.ReadDirFS, directory string, hostname,
 			continue
 		}
 
-		var newEntry entry.Entry
-		var err error
-
-		fName := fileName(dirEntry.Name())
-		source, fileDeployment, fileInstance := fileSource(fName, hostname)
-
-		if fName != "env" && fName != "vault" && ((fileDeployment != "" && fileDeployment != deployment) || (fileInstance != "" && fileInstance != instance)) {
+		fName := dirEntry.Name()
+		if strings.HasPrefix(fName, ".") {
 			continue
 		}
+		fPath := filepath.Join(directory, fName)
 
-		f, err := fsys.Open(filepath.Join(directory, dirEntry.Name()))
+		src, err := source.New(ctx, dirFs, fPath, hostname)
 		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
+			if err == datamap.ErrUnknownFileSource {
+				continue
+			}
 
-		switch filepath.Ext(dirEntry.Name()) {
-		case ".json":
-			newEntry, err = entry.NewJson(ctx, f)
-		case ".toml":
-			newEntry, err = entry.NewToml(ctx, f)
-		case ".yaml", ".yml":
-			newEntry, err = entry.NewYaml(ctx, f)
-		default:
-			continue
-		}
-
-		if err != nil {
 			return nil, err
 		}
 
-		sources = append(sources, configEntry{
-			Entry:  newEntry,
-			source: source,
-			file:   dirEntry.Name(),
-		})
+		sources = append(sources, src)
 	}
 
 	return sources, nil

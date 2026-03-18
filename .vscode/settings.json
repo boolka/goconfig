@@ -1,0 +1,13 @@
+{
+  "cSpell.words": [
+    "approle",
+    "benchmem",
+    "datamap",
+    "Originer",
+    "roleid",
+    "secretid",
+    "trimpath",
+    "userpass"
+  ],
+  "go.buildTags": "goconfig_vault"
+}

@@ -1,3 +1,13 @@
+# v1.3.0
+
+- move vault source build to specific build tag (goconfig_vault)
+- completely remove embedded vault client authorization
+- refactor modules to simplify config package
+- explicitly ignore dot prefixed files in config directory
+- move out integration tests
+- completely rewrite vault module
+- remove vault cli functional - now only api usage can trigger vault server
+
 # v1.2.1
 
 - fix directory sources recognition

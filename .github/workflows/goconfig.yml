@@ -1,0 +1,37 @@
+name: goconfig
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ["1.25.x", "1.26.x"]
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: go prepare
+        run: go mod download
+      - name: static check
+        run: |
+          go vet ./cmd/...
+          go vet ./pkg/...
+          go vet -tags goconfig_vault ./pkg/...
+      - name: build empty
+        run: go build -v -trimpath -o goconfig ./cmd/goconfig/goconfig.go
+      - name: build vault
+        run: go build -tags goconfig_vault -v -trimpath -o goconfig_vault ./cmd/goconfig/goconfig.go
+      - name: test empty build
+        run: go test -race -count 10 ./pkg/...
+      - name: test vault build
+        run: go test -race -tags goconfig_vault -count 10 ./pkg/...
+      - name: test cli
+        run: go test -race -count 10 ./cmd/...
+      - name: bench
+        run: go test -benchmem -bench BenchmarkConfig github.com/boolka/goconfig/pkg/config_test
