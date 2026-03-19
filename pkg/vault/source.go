@@ -4,25 +4,31 @@ package vault
 
 import (
 	"context"
+	"errors"
 	"io/fs"
 
 	"github.com/boolka/goconfig/pkg/datamap"
-	vault "github.com/hashicorp/vault/api"
+	vaultApi "github.com/hashicorp/vault/api"
 )
 
 type VaultSource struct {
-	client *vault.Client
+	client *vaultApi.Client
 	data   map[string]any
 }
 
-func NewVaultSource(ctx context.Context, dirFs fs.ReadDirFS, fpath string, client *vault.Client) (*VaultSource, error) {
+func NewVaultSource(ctx context.Context, dirFs fs.ReadDirFS, fpath string, client any) (*VaultSource, error) {
 	data, err := datamap.NewDataMapFromFile(ctx, dirFs, fpath)
 	if err != nil {
 		return nil, err
 	}
 
+	vaultClient, ok := client.(*vaultApi.Client)
+	if !ok {
+		return nil, errors.New("invalid vault client")
+	}
+
 	return &VaultSource{
-		client: client,
+		client: vaultClient,
 		data:   data,
 	}, nil
 }
@@ -56,6 +62,6 @@ func (s *VaultSource) Get(ctx context.Context, path string) (any, bool) {
 	return datamap.GetByPath(secret.Data, mapPath)
 }
 
-func (e *VaultSource) Client() *vault.Client {
+func (e *VaultSource) Client() *vaultApi.Client {
 	return e.client
 }

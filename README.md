@@ -88,7 +88,7 @@ goconfig.Options{
 	Deployment:        "production",
 	Hostname:          "localhost",                // os.Hostname() by default
 	Logger:            *slog.Logger,               // goconfig will remain silent when nil is received
-	VaultClient:       *vault.Client,              // vault client instance
+	VaultClient:       any,                        // vault client instance
 }
 ```
 

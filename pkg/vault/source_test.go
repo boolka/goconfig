@@ -89,7 +89,12 @@ func TestVaultBrokenPath(t *testing.T) {
 
 	ctx := context.Background()
 
-	v, err := vault.NewVaultSource(ctx, os.DirFS("testdata").(fs.ReadDirFS), "vault.toml", nil)
+	client, err := vaultApi.NewClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v, err := vault.NewVaultSource(ctx, os.DirFS("testdata").(fs.ReadDirFS), "vault.toml", client)
 	if err != nil {
 		t.Fatal(err)
 	}

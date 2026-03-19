@@ -13,7 +13,6 @@ import (
 	goconfigLogger "github.com/boolka/goconfig/pkg/logger"
 	"github.com/boolka/goconfig/pkg/source"
 	vault "github.com/boolka/goconfig/pkg/vault"
-	vaultApi "github.com/hashicorp/vault/api"
 )
 
 // Config options:
@@ -41,7 +40,7 @@ type Options struct {
 	Deployment  string
 	Hostname    string
 	Logger      *slog.Logger
-	VaultClient *vaultApi.Client
+	VaultClient any
 }
 
 type Config struct {

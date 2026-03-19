@@ -36,8 +36,14 @@ func prepareSecret(ctx context.Context, t *testing.T, addr string) {
 func TestVaultBrokenPath(t *testing.T) {
 	ctx := context.Background()
 
+	client, err := vaultApi.NewClient(vaultApi.DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cfg, err := config.New(ctx, config.Options{
-		Directory: "testdata/vault",
+		Directory:   "testdata/vault",
+		VaultClient: client,
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -67,8 +67,14 @@ func TestVault(t *testing.T) {
 func TestVaultBrokenPath(t *testing.T) {
 	ctx := context.Background()
 
+	client, err := vaultApi.NewClient(vaultApi.DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cfg, err := config.New(ctx, config.Options{
-		Directory: "testdata/config",
+		Directory:   "testdata/config",
+		VaultClient: client,
 	})
 	if err != nil {
 		t.Fatal(err)
